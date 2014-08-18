@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Saratoga Maximum Range</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Saratoga Maximum Range">
+  <meta name="author" content="John Taylor">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  <link rel=stylesheet href="./assets/css/ribbons.css"></link>
+
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+    <h1>Saratoga Maximum Range</h1>
+    <h2></h2>
+    <p>John Taylor<br/></p>
+  </hgroup>
+  <article></article>  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:;">
+  <article data-timings="">
+    <style> .title-slide {
+     background-image: url(assets/img/PiperSaragtogaIITC.jpg);
+     background-repeat: no-repeat;
+     background-position: top;
+     background-size: 50% 60%;
+   }
+</style>
+
+<h2>Motivation</h2>
+
+<ul>
+<li>This presentation describes the interactive <a href="http://jt1984.shinyapps.io/Project">Saratoga Maximum Range</a> web application.</li>
+<li>The web application demonstrates performance characteristics of the Piper Saratoga general aviation aircraft. Information about this aircraft can be found on <a href="http://en.wikipedia.org/wiki/Piper_Saratoga">Wikipedia</a>.</li>
+<li>The interactive features allow the user to understand the effects of some of the important considerations, or variables, when determining the cruising altitude, such as:
+
+<ul>
+<li>Aircraft course relative to the winds</li>
+<li>Changes in temperature from the standard day</li>
+<li>Differing fuel quantities</li>
+<li>Increases or decreases in payload (the weight of passengers and cargo)</li>
+</ul></li>
+<li>The creation of this analysis is motivated by the pilot&#39;s desire to fly longer distance flights with a heavy payload. The pilot wants to understand how to maximize his or her range (the distance traveled) in determining the best cruising altitude.</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-2" style="background:;">
+  <hgroup>
+    <h2>Getting the Data</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>The data for this analysis were taken from the <a href="http://www.x-plane.com/desktop/home/">X-Plane</a> desktop computer flight simulator.</li>
+<li>The aircraft performance characteristics are provided to X-Plane via installable software developed by <a href="http://www.carenado.com/CarSite/Portal/index.php">Carenado</a>.</li>
+<li>The data were gathered by manually &quot;flying&quot; the simulator at various airspeeds, altitudes, weather conditions, fuel quantities, and payloads. At various points, data was manually recorded.</li>
+<li>The recorded data was entered into Microsoft Excel for exploratory data analysis.</li>
+<li>The data were then placed in .csv files for use in the R software environment for statistical computing and graphics.</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-3" style="background:;">
+  <hgroup>
+    <h2>The Calculations</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>Since this application was developed to provide insight into gaining maximum fuel efficiency, it assumes the pilot will fly at maximum range airspeed.
+
+<ul>
+<li>Fully understanding airspeed&#39;s impact would require a slightly different analysis focused on airspeed rather than altitude.</li>
+</ul></li>
+<li>The algorithms to convert between calibrated and true airspeed can be quite complex to derive. I gratefully use the equations provided by Ed Williams, from his <a href="http://williams.best.vwh.net/avform.htm">website</a>.</li>
+<li>The simulated aircraft was flown with the fuel mixture set for &quot;Lean of Peak&quot; operations, providing significant increases in fuel efficiency. While beyond the scope of this discussion, engine modifications have made this practice less controversial than it has been in the past.</li>
+<li>The calculations compute a maximum altitude for any given fuel weight. This altitude is computed for the aircraft&#39;s service ceiling--the altitude at which the aircraft can climb at only 200 feet per minute.</li>
+<li>Over long distances, range can be extended slightly by slowing the aircraft a few knots (nautical miles per hour) as fuel is burned and weight decreases. This analysis makes simplifying assumptions and does not compute this effect.</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h2>Displaying the Results</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>The following charts show the dramatic effect of wind:</li>
+</ul>
+
+<p><img src="assets/fig/unnamed-chunk-1.png" alt="plot of chunk unnamed-chunk-1"> </p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-5" style="background:;">
+  <article data-timings="">
+    
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title=''>
+         1
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='Getting the Data'>
+         2
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='The Calculations'>
+         3
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='Displaying the Results'>
+         4
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=5 title=''>
+         5
+      </a>
+    </li>
+  </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>

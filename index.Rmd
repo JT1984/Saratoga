@@ -1,0 +1,416 @@
+---
+title       : Saratoga Maximum Range
+author      : John Taylor 
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+--- 
+<style> .title-slide {
+     background-image: url(assets/img/PiperSaragtogaIITC.jpg);
+     background-repeat: no-repeat;
+     background-position: top;
+     background-size: 50% 60%;
+   }
+</style>
+
+## Motivation
+
+- This presentation describes the interactive [Saratoga Maximum Range](http://jt1984.shinyapps.io/Project) web application.
+- The web application demonstrates performance characteristics of the Piper Saratoga general aviation aircraft. Information about this aircraft can be found on [Wikipedia](http://en.wikipedia.org/wiki/Piper_Saratoga).
+- The interactive features allow the user to understand the effects of some of the important considerations, or variables, when determining the cruising altitude, such as:
+  + Aircraft course relative to the winds
+  + Changes in temperature from the standard day
+  + Differing fuel quantities
+  + Increases or decreases in payload (the weight of passengers and cargo)
+- The creation of this analysis is motivated by the pilot's desire to fly longer distance flights with a heavy payload. The pilot wants to understand how to maximize his or her range (the distance traveled) in determining the best cruising altitude.
+
+---
+
+## Getting the Data
+- The data for this analysis were taken from the [X-Plane](http://www.x-plane.com/desktop/home/) desktop computer flight simulator.
+- The aircraft performance characteristics are provided to X-Plane via installable software developed by [Carenado](http://www.carenado.com/CarSite/Portal/index.php).
+- The data were gathered by manually "flying" the simulator at various airspeeds, altitudes, weather conditions, fuel quantities, and payloads. At various points, data was manually recorded.
+- The recorded data was entered into Microsoft Excel for exploratory data analysis.
+- The data were then placed in .csv files for use in the R software environment for statistical computing and graphics.
+
+---
+
+## The Calculations
+
+- Since this application was developed to provide insight into gaining maximum fuel efficiency, it assumes the pilot will fly at maximum range airspeed.
+  + Fully understanding airspeed's impact would require a slightly different analysis focused on airspeed rather than altitude.
+- The algorithms to convert between calibrated and true airspeed can be quite complex to derive. I gratefully use the equations provided by Ed Williams, from his [website](http://williams.best.vwh.net/avform.htm).
+- The simulated aircraft was flown with the fuel mixture set for "Lean of Peak" operations, providing significant increases in fuel efficiency. While beyond the scope of this discussion, engine modifications have made this practice less controversial than it has been in the past.
+- The calculations compute a maximum altitude for any given fuel weight. This altitude is computed for the aircraft's service ceiling--the altitude at which the aircraft can climb at only 200 feet per minute.
+- Over long distances, range can be extended slightly by slowing the aircraft a few knots (nautical miles per hour) as fuel is burned and weight decreases. This analysis makes simplifying assumptions and does not compute this effect.
+
+---
+
+## Displaying the Results
+- The following charts show the dramatic effect of wind:
+
+```{r, echo=FALSE, fig.width=14, fig.height=6}
+
+# The following four functions (TAS, CAS, DALT, TempAtAlt) provide conversions 
+# for the main body of code.
+# Equations used in these four functions are gratefully taken from Ed Williams's
+# website: williams.best.vwh.net/avform.htm
+# I have changed some variable names to improve readability.
+
+# Finds True Airspeed given Calibrated Airspeed.
+TAS <- function (CAL, Alt, Temp) {
+
+  Temp_Std_SL <- 288.15
+  Temp_Lapse_Rate <- 0.0019812
+
+  Temp_Std_Alt <- Temp_Std_SL - (Alt * Temp_Lapse_Rate)
+  Temp_Actual <- Temp + 273.15
+  
+  Density_Alt <- Alt + 
+    (Temp_Std_Alt / Temp_Lapse_Rate) * 
+    (1 - (Temp_Std_Alt / Temp_Actual) ^ 0.234969)
+  
+  CAL / (1 - 6.8755856 * 10 ^ -6 * Density_Alt) ^ 2.12794
+
+}
+
+# Finds Calibrated Airspeed given True Airspeed.
+CAS <- function (TAS, Alt, Temp) {
+
+Temp_Std_SL <- 288.15
+Temp_Lapse_Rate <- 0.0019812
+
+Temp_Std_Alt <- Temp_Std_SL - (Alt * Temp_Lapse_Rate)
+Temp_Actual <- Temp + 273.15
+
+Density_Alt <- Alt + 
+  (Temp_Std_Alt / Temp_Lapse_Rate) * 
+  (1 - (Temp_Std_Alt / Temp_Actual) ^ 0.234969)
+
+TAS * (1 - 6.8755856 * 10 ^ -6 * Density_Alt) ^ 2.12794
+
+}
+
+# Finds Density Altitude given Pressure Altitude and the 
+# difference in temperature from a standard day.
+DALT <- function (PALT, DeltaT) {
+
+  Temp_Std_SL <- 288.15
+  Temp_Lapse_Rate <- 0.0019812
+  
+  Temp_Std_Alt <- Temp_Std_SL - (PALT * Temp_Lapse_Rate)
+  Temp_Actual <- Temp_Std_Alt + DeltaT
+  
+  PALT + (Temp_Std_Alt / Temp_Lapse_Rate) * 
+    (1 - (Temp_Std_Alt / Temp_Actual) ^ 0.234969)
+
+}
+
+# Finds the temperature at alitude given the pressure altitude 
+# and the difference in temperature from a standard day.
+TempAtAlt <- function (Alt, DeltaT) {
+
+  Temp_Std_SL <- 15
+  Temp_Lapse_Rate <- 0.0019812
+  
+  Temp_Std_Alt <- Temp_Std_SL - (Alt * Temp_Lapse_Rate)
+  
+  DeltaT + Temp_Std_Alt
+
+}
+
+# headwind returns the headwind component of the wind given the 
+# aircraft's course, the wind direction, and the wind speed.
+headWind <- function (Course, WindDir, WindSpeed) {
+
+  if (abs(WindDir - Course) > 180) {
+    if (WindDir < Course) { 
+      adjWindDir <- WindDir + 360
+      adjCourse <- Course
+    }
+    else { 
+      adjWindDir <- WindDir
+      adjCourse <- Course + 360
+    }
+  }
+  else {
+    adjWindDir <- WindDir
+    adjCourse <- Course
+  }
+  
+  # Find the angle between the wind and the course heading.
+  windAngle <- adjWindDir - adjCourse
+  
+  # Headwinds and right crosswinds are positive;
+  # tailwinds and left crosswinds are negative.
+  WindSpeed * cos(windAngle * (pi / 180))
+
+}
+
+RightCrossWind <- function (Course, WindDir, WindSpeed) {
+
+  if (abs(WindDir - Course) > 180) {
+    if (WindDir < Course) {
+      adjWindDir <- WindDir + 360
+      adjCourse <- Course
+    }
+    else {
+      adjWindDir <- WindDir
+      adjCourse <- Course + 360
+    }
+  }
+  else {
+    adjWindDir = WindDir
+    adjCourse = Course
+  }
+  
+  # Find the angle between the wind and the course heading.
+  windAngle <- adjWindDir - adjCourse
+  
+  # Headwinds and right crosswinds are positive;
+  # tailwinds and left crosswinds are negative.
+  WindSpeed * sin(windAngle * (pi / 180))
+
+}
+
+# The rangeChart function is the main function that handles all
+# calculations for chart and creates the ggplot2 chart at the end.
+rangeChart <- function (
+                DeltaT,
+                Course,
+                FuelQty,
+                Weight,
+                windFit) {
+
+  # Read in the Fuel Flow as a function of True Airspeed Data.
+  FF_TAS <- read.csv("FF_TAS.csv")
+  # Find the curve that fits the data and create the coefficients.
+  FF_TAS_fit <- lm(FF ~ poly(TAS, 2, raw = TRUE), data = FF_TAS)
+  a_FF_TAS <- unname(FF_TAS_fit$coef[3])
+  b_FF_TAS <- unname(FF_TAS_fit$coef[2])
+  c_FF_TAS <- unname(FF_TAS_fit$coef[1])
+  
+  # Read in the True Airspeed as a function of Weight Data.
+  TAS_Weight <- read.csv("TAS_Weight.csv")
+  TAS_Weight_fit <- lm(TAS ~ Weight, data = TAS_Weight)
+  # Find the line that fits the data and create the coefficients.
+  m_TAS_Weight <- unname(TAS_Weight_fit$coef[2])
+  b_TAS_Weight <- unname(TAS_Weight_fit$coef[1])
+  
+  # Read in the True Airspeed as a function of Headwind Data and create the slope coef.
+  TAS_Wind <- read.csv("TAS_Headwind.csv")
+  TAS_Wind_fit <- lm(TAS ~ Headwind, data = TAS_Wind)
+  m_TAS_Wind <- unname(TAS_Wind_fit$coef[2])
+  
+  # Read in the Maximum Altitude as a function of Weight Data.
+  MaxAlt_Weight <- read.csv("MaxAlt.csv")
+  # Find the line that best fits the data and create the coefficients.
+  MaxAlt_Weight_fit <- lm(MaxAlt ~ Weight, data = MaxAlt_Weight)
+  m_MaxAlt_Weight <- unname(MaxAlt_Weight_fit$coef[2])
+  b_MaxAlt_Weight <- unname(MaxAlt_Weight_fit$coef[1])
+  
+  # Read in the Airspeed as a function of Altitude Data.
+  AS_Alt <- read.csv("AS_Altitude.csv")
+  # Find the line that fits CAS as a function of Altitude and create the coefficients.
+  CAS_Alt_fit <- lm(CAS ~ Altitude, data = AS_Alt)
+  m_CAS_Alt <- unname(CAS_Alt_fit$coef[2])
+  b_CAS_Alt <- unname(CAS_Alt_fit$coef[1])
+  # Find the curve that fits Miles Per Gallon (MPG) as a function 
+  # of Altitdue and create the coefficients
+  MPG_Alt_fit <- lm(MPG ~ poly(Altitude, 3, raw = TRUE), data = AS_Alt)
+  a_MPG_Alt <- unname(MPG_Alt_fit$coef[4])
+  b_MPG_Alt <- unname(MPG_Alt_fit$coef[3])
+  c_MPG_Alt <- unname(MPG_Alt_fit$coef[2])
+  d_MPG_Alt <- unname(MPG_Alt_fit$coef[1])
+  
+  # Read in the Climbout Data.
+  Climbout <- read.csv("Climbout.csv")
+  # Find the curve that fits Climb Fuel as a function 
+  # of Altitdue and create the coefficients.
+  ClimbFuel_fit <- lm(Fuel ~ poly(Altitude, 4, raw = TRUE), data = Climbout)
+  a_ClimbFuel_Alt <- unname(ClimbFuel_fit$coef[5])
+  b_ClimbFuel_Alt <- unname(ClimbFuel_fit$coef[4])
+  c_ClimbFuel_Alt <- unname(ClimbFuel_fit$coef[3])
+  d_ClimbFuel_Alt <- unname(ClimbFuel_fit$coef[2])
+  e_ClimbFuel_Alt <- unname(ClimbFuel_fit$coef[1])
+  # Find the curve that fits Climb Time as a function 
+  # of Altitdue and create the coefficients.
+  ClimbTime_fit <- lm(Time ~ poly(Altitude, 4, raw = TRUE), data = Climbout)
+  a_ClimbTime_Alt <- unname(ClimbTime_fit$coef[5])
+  b_ClimbTime_Alt <- unname(ClimbTime_fit$coef[4])
+  c_ClimbTime_Alt <- unname(ClimbTime_fit$coef[3])
+  d_ClimbTime_Alt <- unname(ClimbTime_fit$coef[2])
+  e_ClimbTime_Alt <- unname(ClimbTime_fit$coef[1])
+  
+  # Read in the Descent Data.
+  Descent <- read.csv("Descent.csv")
+  # Find the curve that fits Descent Fuel as a function 
+  # of Altitdue and create the coefficients.
+  DescentFuel_fit <- lm(Fuel ~ poly(Altitude, 2, raw = TRUE), data = Descent)
+  a_DescentFuel_Alt <- unname(DescentFuel_fit$coef[3])
+  b_DescentFuel_Alt <- unname(DescentFuel_fit$coef[2])
+  c_DescentFuel_Alt <- unname(DescentFuel_fit$coef[1])
+  # Find the line that fits Descent Time as a function 
+  # of Altitdue and create the coefficients.
+  DescentTime_fit <- lm(Time ~ Altitude, data = Descent)
+  m_DescentTime_Alt <- unname(DescentTime_fit$coef[2])
+  b_DescentTime_Alt <- unname(DescentTime_fit$coef[1])
+  
+  m_WindDir_Alt <- windFit[1]$coef[2]
+  b_WindDir_Alt <- windFit[1]$coef[1]
+  
+  # There are 12 items per model, the 13th item is the 
+  # coefficient listing for the second model.
+  m_WindSpeed_Alt <- windFit[13]$coef[2]
+  b_WindSpeed_Alt <- windFit[13]$coef[1]
+
+  #
+  # With all the coefficients in, the calculations begin.
+  #
+  
+  # Loop through all probable altitudes building data for the chart.
+  Altitude <- vector()
+  Range <- vector()
+  Alt <- 2000
+  MaxAlt <- m_MaxAlt_Weight * Weight + b_MaxAlt_Weight
+  while (Alt <= 18000 && Alt <= MaxAlt) {
+    densityAlt <- DALT(Alt, DeltaT)
+    
+    # Find the best zero-wind true airspeed.
+    TASzw <- TAS(m_CAS_Alt * densityAlt + b_CAS_Alt, densityAlt, TempAtAlt(densityAlt, DeltaT))
+    
+    # Find wind direction, speed, and headwind for this altitude.
+    windDir_Alt <- m_WindDir_Alt * Alt + b_WindDir_Alt
+    windSpeed_Alt <- m_WindSpeed_Alt * Alt + b_WindSpeed_Alt
+    
+    head_Wind <- headWind(Course, windDir_Alt, windSpeed_Alt)
+    
+    # Find the adjusted true airspeed and fuel flow (FF) for this altitude.
+    TASwind <- max(m_TAS_Wind * head_Wind + TASzw, 
+        TAS(CAS(121, 12000, TempAtAlt(12000, 0)), Alt, TempAtAlt(Alt, DeltaT)))
+    
+    FF <- TASzw / (a_MPG_Alt * densityAlt ^ 3 + b_MPG_Alt * densityAlt ^ 2 + 
+                  c_MPG_Alt * densityAlt + d_MPG_Alt)
+    
+    # Calculte the effective distance considering crosswinds.
+    xWind_half <- abs(RightCrossWind(Course, m_WindDir_Alt * (Alt / 2) + b_WindDir_Alt, 
+        m_WindSpeed_Alt * (Alt / 2) + b_WindSpeed_Alt))
+    
+    xWind_cruise <- abs(RightCrossWind(Course, m_WindDir_Alt * Alt + b_WindDir_Alt, 
+        m_WindSpeed_Alt * Alt + b_WindSpeed_Alt))
+    
+    # Find the estimated average ground speed. The 4 is an approximate addition 
+    # account for the aircraft weight.
+    GSavg <- TASzw + 4 - head_Wind
+    
+    # Calculate the density altitude and ground speed for half the altitude 
+    # gained in the climb. This will be used for the climb and descent calculations.
+    densityAlt_half <- DALT(Alt / 2, DeltaT)
+    GShalf <- TAS(m_CAS_Alt * densityAlt_half + b_CAS_Alt, densityAlt_half, 
+        TempAtAlt(densityAlt_half, DeltaT)) - (head_Wind / 2)
+    
+    # Calculate the distance and fuel for the climb.
+    timeClimb <- a_ClimbTime_Alt * Alt ^ 4 + b_ClimbTime_Alt * Alt ^ 3 + 
+        c_ClimbTime_Alt * Alt ^ 2 + d_ClimbTime_Alt * Alt + e_ClimbTime_Alt
+    
+    distClimb <- GShalf * (timeClimb / 60)
+    
+    fuelClimb <- a_ClimbFuel_Alt * Alt ^ 4 + b_ClimbFuel_Alt * Alt ^ 3 + 
+        c_ClimbFuel_Alt * Alt ^ 2 + d_ClimbFuel_Alt * Alt + e_ClimbFuel_Alt
+    
+    # Calculate the distance and fuel for the descent.
+    timeDescent <- m_DescentTime_Alt * Alt + b_DescentTime_Alt
+    distDescent <- GShalf * (timeDescent / 60)
+    fuelDescent <- a_DescentFuel_Alt * Alt ^ 2 + b_DescentFuel_Alt * Alt + 
+        c_DescentFuel_Alt
+    
+    # Adjust the true airspeed for aircraft weight.
+    TASbest <- m_TAS_Weight * (Weight - 6 * (FuelQty - fuelClimb) - 2927) + TASwind
+    
+    GS <- TASbest - head_Wind
+    
+    # Calculate a correction to the fuel flow that takes into account changes 
+    # in true airspeed due to winds and weight.
+    FFcorr <- -((a_FF_TAS * TASzw ^ 2 + b_FF_TAS * TASzw + c_FF_TAS) - 
+               (a_FF_TAS * TASbest ^ 2 + b_FF_TAS * TASbest + c_FF_TAS))
+    
+    # Calculate the mileage in miles per gallon (MPG).
+    MPGcorr <- GS / (FF + FFcorr)
+  
+    # Calculate how far the aircraft can go given the available fuel.
+    Dist_Cruise <- (FuelQty - fuelClimb - fuelDescent) * MPGcorr
+    Dist_eff <- distClimb + Dist_Cruise + distDescent
+  
+    # Determine a weighted average for the winds between the climb and 
+    # descent legs and the the cruise legs.
+    xWind_eff <- xWind_half * ((distClimb + distDescent) / Dist_eff) + 
+      xWind_cruise * ((Dist_eff - distClimb - distDescent) / Dist_eff)
+    
+    xTrack <- xWind_eff * (Dist_eff / GSavg)
+    
+    # Calculate the resultant maximum distance accounting for crosswinds.
+    distance <- sqrt(Dist_eff ^ 2 - xTrack ^ 2)
+    
+    # Record the altitude and maximum distance for this altitude.
+    Altitude <- c(Altitude, Alt)
+    Range <- c(Range, distance)
+  
+    Alt <- Alt + 1000
+  }
+
+  # Create the dataset
+  Ranges <- data.frame(Altitude, Range)
+  
+  # Create the plot for the maximum ranges at each possible altitude.
+  library(ggplot2)
+  p <- ggplot(Ranges, aes(x = Altitude, y = Range))
+  p + geom_line(colour = "blue") + scale_x_continuous(breaks=seq(0, 18000, 2000))
+  
+}
+
+# Generate the wind model.
+Altitude <- c(3000, 6000, 9000, 12000, 18000)
+Direction <- c(270, 270, 270, 270, 270)
+Speed <- c(10, 20, 30, 40, 60)
+winds <- data.frame(Altitude, Direction, Speed)
+dirFit <- lm(Direction ~ Altitude, data = winds)
+speedFit <- lm(Speed ~ Altitude, data = winds)
+windFit <- c(dirFit, speedFit)
+
+# Call the plotting function with the user inputs.
+# Fifteen pounds is subtracted from the input fuel quantity to 
+# account for 2 gallons of ground operations, 5 gallons of divert
+# fuel, and 8 gallons of fuel reserve (45 minutes).
+#
+# The fourth parameter, Weight, is calculated by adding the basic 
+# weight of the aircraft, 2400 lbs., to the weight of the fuel
+# (aviation fuel weighs 6 lbs./gallon), and the user-input weight 
+# of passengers and cargo.
+headwind <- rangeChart(
+    0,
+    270,
+    50 - 15,
+    2400 + 50 * 6 + 410,
+    windFit)
+
+tailwind <- rangeChart(
+    0,
+    90,
+    50 - 15,
+    2400 + 50 * 6 + 410,
+    windFit)
+
+library(grid)
+library(gridExtra)
+grid.arrange(headwind, tailwind, ncol=2)
+
+```
+
+---
+
+
+
+
