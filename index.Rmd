@@ -1,6 +1,6 @@
 ---
 title       : Saratoga Maximum Range
-author      : John Taylor 
+author      : John Taylor (jt_taylor@msn.com)
 framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
 highlighter : highlight.js  # {highlight.js, prettify, highlight}
 hitheme     : tomorrow      # 
