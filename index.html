@@ -64,7 +64,7 @@
 <li>Differing fuel quantities</li>
 <li>Increases or decreases in payload (the weight of passengers and cargo)</li>
 </ul></li>
-<li>The creation of this analysis is motivated by the pilot&#39;s desire to fly longer distance flights with a heavy payload. The pilot wants to understand how to maximize his or her range (the distance traveled) in determining the best cruising altitude.</li>
+<li>The creation of this analysis is motivated by the pilot&#39;s desire to fly longer distances with a heavy payload. The pilot wants to understand how to maximize his or her range (the distance traveled) when determining the best cruising altitude.</li>
 </ul>
 
   </article>
@@ -80,7 +80,7 @@
 <li>The data for this analysis were taken from the <a href="http://www.x-plane.com/desktop/home/">X-Plane</a> desktop computer flight simulator.</li>
 <li>The aircraft performance characteristics are provided to X-Plane via installable software developed by <a href="http://www.carenado.com/CarSite/Portal/index.php">Carenado</a>.</li>
 <li>The data were gathered by manually &quot;flying&quot; the simulator at various airspeeds, altitudes, weather conditions, fuel quantities, and payloads. At various points, data was manually recorded.</li>
-<li>The recorded data was entered into Microsoft Excel for exploratory data analysis.</li>
+<li>The recorded data were entered into Microsoft Excel for exploratory data analysis.</li>
 <li>The data were then placed in .csv files for use in the R software environment for statistical computing and graphics.</li>
 </ul>
 
@@ -94,14 +94,14 @@
   </hgroup>
   <article data-timings="">
     <ul>
-<li>Since this application was developed to provide insight into gaining maximum fuel efficiency, it assumes the pilot will fly at maximum range airspeed.
+<li>Since this application was developed to provide insight into gaining maximum fuel efficiency, it assumes the pilot will fly at the maximum range airspeed.
 
 <ul>
 <li>Fully understanding airspeed&#39;s impact would require a slightly different analysis focused on airspeed rather than altitude.</li>
 </ul></li>
 <li>The algorithms to convert between calibrated and true airspeed can be quite complex to derive. I gratefully use the equations provided by Ed Williams, from his <a href="http://williams.best.vwh.net/avform.htm">website</a>.</li>
 <li>The simulated aircraft was flown with the fuel mixture set for &quot;Lean of Peak&quot; operations, providing significant increases in fuel efficiency. While beyond the scope of this discussion, engine modifications have made this practice less controversial than it has been in the past.</li>
-<li>The calculations compute a maximum altitude for any given fuel weight. This altitude is computed for the aircraft&#39;s service ceiling--the altitude at which the aircraft can climb at only 200 feet per minute.</li>
+<li>The application computes a maximum altitude for any given fuel weight. This altitude equates to the aircraft&#39;s service ceiling--the altitude at which the aircraft can climb at only 200 feet per minute.</li>
 <li>Over long distances, range can be extended slightly by slowing the aircraft a few knots (nautical miles per hour) as fuel is burned and weight decreases. This analysis makes simplifying assumptions and does not compute this effect.</li>
 </ul>
 

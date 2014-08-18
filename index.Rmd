@@ -25,7 +25,7 @@ knit        : slidify::knit2slides
   + Changes in temperature from the standard day
   + Differing fuel quantities
   + Increases or decreases in payload (the weight of passengers and cargo)
-- The creation of this analysis is motivated by the pilot's desire to fly longer distance flights with a heavy payload. The pilot wants to understand how to maximize his or her range (the distance traveled) in determining the best cruising altitude.
+- The creation of this analysis is motivated by the pilot's desire to fly longer distances with a heavy payload. The pilot wants to understand how to maximize his or her range (the distance traveled) when determining the best cruising altitude.
 
 ---
 
@@ -33,18 +33,18 @@ knit        : slidify::knit2slides
 - The data for this analysis were taken from the [X-Plane](http://www.x-plane.com/desktop/home/) desktop computer flight simulator.
 - The aircraft performance characteristics are provided to X-Plane via installable software developed by [Carenado](http://www.carenado.com/CarSite/Portal/index.php).
 - The data were gathered by manually "flying" the simulator at various airspeeds, altitudes, weather conditions, fuel quantities, and payloads. At various points, data was manually recorded.
-- The recorded data was entered into Microsoft Excel for exploratory data analysis.
+- The recorded data were entered into Microsoft Excel for exploratory data analysis.
 - The data were then placed in .csv files for use in the R software environment for statistical computing and graphics.
 
 ---
 
 ## The Calculations
 
-- Since this application was developed to provide insight into gaining maximum fuel efficiency, it assumes the pilot will fly at maximum range airspeed.
+- Since this application was developed to provide insight into gaining maximum fuel efficiency, it assumes the pilot will fly at the maximum range airspeed.
   + Fully understanding airspeed's impact would require a slightly different analysis focused on airspeed rather than altitude.
 - The algorithms to convert between calibrated and true airspeed can be quite complex to derive. I gratefully use the equations provided by Ed Williams, from his [website](http://williams.best.vwh.net/avform.htm).
 - The simulated aircraft was flown with the fuel mixture set for "Lean of Peak" operations, providing significant increases in fuel efficiency. While beyond the scope of this discussion, engine modifications have made this practice less controversial than it has been in the past.
-- The calculations compute a maximum altitude for any given fuel weight. This altitude is computed for the aircraft's service ceiling--the altitude at which the aircraft can climb at only 200 feet per minute.
+- The application computes a maximum altitude for any given fuel weight. This altitude equates to the aircraft's service ceiling--the altitude at which the aircraft can climb at only 200 feet per minute.
 - Over long distances, range can be extended slightly by slowing the aircraft a few knots (nautical miles per hour) as fuel is burned and weight decreases. This analysis makes simplifying assumptions and does not compute this effect.
 
 ---
@@ -183,7 +183,8 @@ rangeChart <- function (
                 Course,
                 FuelQty,
                 Weight,
-                windFit) {
+                windFit,
+                windText) {
 
   # Read in the Fuel Flow as a function of True Airspeed Data.
   FF_TAS <- read.csv("FF_TAS.csv")
@@ -367,7 +368,7 @@ rangeChart <- function (
   # Create the plot for the maximum ranges at each possible altitude.
   library(ggplot2)
   p <- ggplot(Ranges, aes(x = Altitude, y = Range))
-  p + geom_line(colour = "blue") + scale_x_continuous(breaks=seq(0, 18000, 2000))
+  p + geom_line(colour = "blue") + scale_x_continuous(breaks=seq(0, 18000, 2000)) + ggtitle(windText)
   
 }
 
@@ -394,14 +395,16 @@ headwind <- rangeChart(
     270,
     50 - 15,
     2400 + 50 * 6 + 410,
-    windFit)
+    windFit,
+    "Headwind")
 
 tailwind <- rangeChart(
     0,
     90,
     50 - 15,
     2400 + 50 * 6 + 410,
-    windFit)
+    windFit,
+    "Tailwind")
 
 library(grid)
 library(gridExtra)
